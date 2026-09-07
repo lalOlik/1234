@@ -170,14 +170,20 @@ class KgeuRepository(
     }
 
     private suspend fun resolveGroupId(): Int {
-        sessionStorage.getGroupId()?.let { return it }
-
-        val rasp = api.currentUserRasp().data
-        val fromRasp = rasp?.id ?: rasp?.groupID
+        // ВАЖНО: сначала всегда пытаемся получить АКТУАЛЬНУЮ группу с сервера.
+        // Раньше тут сначала проверялся кэш (sessionStorage.getGroupId()) и, если он
+        // был не пустой, функция сразу выходила — из-за этого при смене семестра/группы
+        // приложение навечно застревало на старом idGroup из прошлого семестра, и сервер
+        // возвращал пустое расписание. Теперь кэш используется только как резерв,
+        // если свежий запрос не удался (например, нет сети).
+        val fresh = runCatching { api.currentUserRasp() }.getOrNull()?.data
+        val fromRasp = fresh?.id ?: fresh?.groupID
         if (fromRasp != null && fromRasp > 0) {
             sessionStorage.saveGroupId(fromRasp)
             return fromRasp
         }
+
+        sessionStorage.getGroupId()?.let { return it }
 
         sessionStorage.getUser()?.groupID?.let { groupId ->
             sessionStorage.saveGroupId(groupId)

@@ -51,7 +51,7 @@ class KgeuApiClient(
         .addInterceptor(authInterceptor)
         .addInterceptor(
             HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BASIC
+                level = HttpLoggingInterceptor.Level.BODY
             },
         )
         .connectTimeout(30, TimeUnit.SECONDS)
